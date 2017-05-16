@@ -17,6 +17,12 @@ import * as multiStorage from './multiStorage.js';
 const DDP_VERSION = '1';
 const DEFAULT_RECONNECT_INTERVAL = 10000;
 
+interface AsyncStorage {
+  get(string): Promise;
+  set(string, mixed): Promise;
+  del(string): Promise;
+}
+
 class DDP extends EventEmitter {
   status: string;
   subscriptions: { [string]: Subscription };
@@ -25,6 +31,7 @@ class DDP extends EventEmitter {
   methodsQueue: Queue;
   collections: { [string]: { [string]: mixed } };
   models: { [string]: Function };
+  storage: AsyncStorage;
 
   constructor(options: {
     debug?: boolean,
@@ -33,6 +40,7 @@ class DDP extends EventEmitter {
     autoReconnect?: boolean,
     reconnectInterval?: number,
     models?: { [string]: Function },
+    storage?: AsyncStorage,
   }) {
     super();
 
@@ -52,6 +60,7 @@ class DDP extends EventEmitter {
     this.reconnectInterval = options.reconnectInterval || DEFAULT_RECONNECT_INTERVAL;
     this.collections = {};
     this.models = options.models || {};
+    this.storage = options.storage || multiStorage;
 
     Object.keys(this.models).forEach((name) => {
       this.collections[name] = {};
@@ -338,7 +347,7 @@ class DDP extends EventEmitter {
 
   handleLogin({ id, token }) {
     this.userId = id;
-    return multiStorage
+    return this.storage
           .set(`${this.endpoint}__login_token__`, token)
           .then(this.emit.bind(this, 'loggedIn', id))
           .then(() => id);
@@ -346,7 +355,7 @@ class DDP extends EventEmitter {
 
   handleLogout() {
     this.userId = null;
-    return multiStorage
+    return this.storage
           .del(`${this.endpoint}__login_token__`)
           .then(this.emit.bind(this, 'loggedOut'))
           .then(() => null);
@@ -356,7 +365,7 @@ class DDP extends EventEmitter {
     // NOTE: This promise never rejects
     return Promise.resolve()
           .then(this.emit.bind(this, 'loggingIn'))
-          .then(() => multiStorage.get(`${this.endpoint}__login_token__`))
+          .then(() => this.storage.get(`${this.endpoint}__login_token__`))
           .then((resume) => {
             if (!resume) {
               // NOTE: It's important to emit loginError here, because we've already
