@@ -51,7 +51,7 @@
     "webpack": "^2.2.1"
   },
   "dependencies": {
-    "@theclinician/toolbelt": "0.0.1",
+    "@theclinician/toolbelt": "0.0.2",
     "ejson": "^2.1.2"
   }
 }
