@@ -15,15 +15,25 @@ import {
 import * as multiStorage from './multiStorage.js';
 
 const DDP_VERSION = '1';
-const PUBLIC_EVENTS = [
-  // Subscription messages
-  'added', 'changed', 'removed',
-];
 const DEFAULT_RECONNECT_INTERVAL = 10000;
 
 class DDP extends EventEmitter {
+  status: string;
+  subscriptions: { [string]: Subscription };
+  methods: { [string]: Method };
+  socket: Socket;
+  methodsQueue: Queue;
+  collections: { [string]: { [string]: mixed } };
+  models: { [string]: Function };
 
-  constructor(options) {
+  constructor(options: {
+    debug?: boolean,
+    endpoint: string,
+    autoConnect?: boolean,
+    autoReconnect?: boolean,
+    reconnectInterval?: number,
+    models?: { [string]: Function },
+  }) {
     super();
 
     this.captureUnhandledErrors([
@@ -40,6 +50,12 @@ class DDP extends EventEmitter {
     this.autoConnect = (options.autoConnect !== false);
     this.autoReconnect = (options.autoReconnect !== false);
     this.reconnectInterval = options.reconnectInterval || DEFAULT_RECONNECT_INTERVAL;
+    this.collections = {};
+    this.models = options.models || {};
+
+    Object.keys(this.models).forEach((name) => {
+      this.collections[name] = {};
+    });
 
     // Methods/ subscriptions handlers
     this.subscriptions = {};
@@ -52,6 +68,11 @@ class DDP extends EventEmitter {
 
     // Socket
     this.socket = new Socket(options.SocketConstructor, options.endpoint);
+
+    if (options.debug) {
+      this.socket.on('message:out', message => console.warn('DDP/OUT', message));
+      this.socket.on('message:in', message => console.warn('DDP/IN', message));
+    }
 
     this.socket.on('open', () => {
       // When the socket opens, send the `connect` message
@@ -118,10 +139,13 @@ class DDP extends EventEmitter {
         case 'error':
           this.emit('error', new DDPError('DDPError', message.reason));
           break;
+        case 'added':
+        case 'changed':
+        case 'removed':
+          this[message.msg](message);
+          break;
         default:
-          if (PUBLIC_EVENTS.indexOf(message.msg) >= 0) {
-            this.emit(message.msg, message);
-          }
+          // ignore the message ...
       }
     });
 
@@ -132,6 +156,55 @@ class DDP extends EventEmitter {
 
   connect() {
     this.socket.open();
+  }
+
+  added({ collection, id, fields }) {
+    const Model = this.models[collection];
+    if (Model) {
+      this.collections = {
+        ...this.collections,
+        [collection]: {
+          ...this.collections[collection],
+          [id]: new Model({
+            _id: id,
+            ...fields,
+          }),
+        },
+      };
+    }
+    this.emit('added', { collection, id, fields });
+  }
+
+  changed({ collection, id, fields }) {
+    const Model = this.models[collection];
+    if (Model) {
+      this.collections = {
+        ...this.collections,
+        [collection]: {
+          ...this.collections[collection],
+          [id]: new Model({
+            ...this.collections[collection][id],
+            ...fields,
+          }),
+        },
+      };
+    }
+    this.emit('changed', { collection, id, fields });
+  }
+
+  removed({ collection, id }) {
+    const Model = this.models[collection];
+    if (Model) {
+      this.collections = {
+        ...this.collections,
+        [collection]: Object.assign({},
+          ...Object.keys(this.collections[collection])
+            .filter(key => key !== id)
+            .map(key => ({ [key]: this.collections[collection] })),
+        ),
+      };
+    }
+    this.emit('removed', { collection, id });
   }
 
   disconnect() {
