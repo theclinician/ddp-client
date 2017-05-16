@@ -1,11 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  createStructuredSelector,
-} from 'reselect';
 import ddp from '../common/utils/ddp';
 import {
   compose,
+  mapProps,
   withState,
   withHandlers,
 } from 'recompose';
@@ -13,28 +11,31 @@ import {
   insert,
   allLists,
 } from '../common/api/TodoLists';
-import {
-  callMethod,
-} from '../common/utils/actions.js';
 import TodoList from '../common/models/TodoList.js';
 
 const Lists = compose(
   withState('title', 'setTitle', ''),
   ddp({
-    subscriptions: [
+    subscriptions: () => [
       allLists.withParams(),
     ],
+    mutations: {
+      onAddList: ({
+        title,
+        setTitle,
+        mutate,
+      }) => () => mutate(insert.withParams({ title })).then(() => setTitle(''))
+    }
+  }, {
+    renderLoader: () => <div>Loading ...</div>,
   }),
-  // connect(
-  //   createStructuredSelector({
-  //     lists: TodoList.selectors.find(),
-  //   }),
-  //   (dispatch, { title, setTitle }) => ({
-  //     onAddList: () =>
-  //       dispatch(callMethod(insert, { title }))
-  //         .then(() => setTitle(''))
-  //   }),
-  // ),
+  mapProps(({
+    collections,
+    ...rest
+  }) => ({
+    ...rest,
+    lists: Object.keys(collections[TodoList.collection]).map(id => collections[TodoList.collection][id]),
+  })),
   withHandlers({
     onChangeTitle: ({
       setTitle,

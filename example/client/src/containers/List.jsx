@@ -1,26 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  createStructuredSelector,
-} from 'reselect';
-import {
   compose,
   withState,
   withProps,
+  mapProps,
   withHandlers,
 } from 'recompose';
 import {
   insert,
   update,
-  remove,
+  // remove,
   todosInList,
 } from '../common/api/Todos';
 import {
   oneList,
 } from '../common/api/TodoLists';
-import {
-  callMethod,
-} from '../common/utils/actions.js';
 import ddp from '../common/utils/ddp';
 import Todo from '../common/models/Todo.js';
 import TodoList from '../common/models/TodoList.js';
@@ -45,36 +40,39 @@ const ListItem = withHandlers({
   </li>
 ));
 
-const getListId = (state, { listId }) => listId;
 const Lists = compose(
   withState('name', 'setName', ''),
   withProps(({ match: { params: { listId } } }) => ({
     listId
   })),
   ddp({
-    subscriptions: (state, { listId }) => [
+    subscriptions: ({ listId }) => [
       oneList.withParams({ listId }),
       todosInList.withParams({ listId }),
     ],
+    mutations: {
+      onAddTodo: ({
+        mutate,
+        listId,
+        name,
+        setName,
+      }) => () => mutate(insert.withParams({ listId, name })).then(() => setName('')),
+      onUpdateTodo: ({
+        mutate,
+      }) => ({ todoId, name, done }) => mutate(update.withParams({ todoId, name, done })),
+    }
+  }, {
+    renderLoader: () => <div>Loading ...</div>,
   }),
-  // connect(
-  //   createStructuredSelector({
-  //     list: TodoList.selectors.getOne(getListId),
-  //     todos: Todo.selectors.findForList(getListId),
-  //   }),
-  //   (dispatch, {
-  //     name,
-  //     setName,
-  //     listId,
-  //   }) => ({
-  //     onAddTodo: () =>
-  //       dispatch(callMethod(insert, { listId, name }))
-  //         .then(() => setName('')),
-  //
-  //     onUpdateTodo: ({ todoId, name, done }) =>
-  //       dispatch(callMethod(update, { todoId, done, name })),
-  //   }),
-  // ),
+  mapProps(({
+    listId,
+    collections,
+    ...rest,
+  }) => ({
+    ...rest,
+    list: collections[TodoList.collection][listId],
+    todos: Object.keys(collections[Todo.collection]).map(id => collections[Todo.collection][id]).filter(todo => todo.getListId() === listId),
+  })),
   withHandlers({
     onChangeName: ({
       setName,
