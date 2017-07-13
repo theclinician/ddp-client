@@ -209,11 +209,9 @@ class DDP extends EventEmitter {
     if (Model) {
       this.collections = {
         ...this.collections,
-        [collection]: Object.assign({},
-          ...Object.keys(this.collections[collection])
-            .filter(key => key !== id)
-            .map(key => ({ [key]: this.collections[collection] })),
-        ),
+        [collection]: this.collections[collection]
+          ? omit(this.collections[collection], [id])
+          : {},
       };
       this.emit('dataUpdated', this.collections);
     }
