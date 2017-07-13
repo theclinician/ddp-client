@@ -177,12 +177,7 @@ const ddp = ({
       } = this.props;
       const mutationsReady = numberOfPendingMutations <= 0;
       const subscriptionsReady = numberOfPendingSubscriptions <= 0;
-      if (renderLoader &&
-        (
-          !subscriptionsReady ||
-          !mutationsReady
-        )
-      ) {
+      if (renderLoader && !subscriptionsReady) {
         return renderLoader({
           ...other,
           subscriptionsReady,
