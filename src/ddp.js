@@ -7,6 +7,7 @@ import Method from './Method.js';
 import Subscription from './Subscription.js';
 import {
   once,
+  omit,
   uniqueId,
 } from './utils';
 import {
@@ -180,23 +181,25 @@ class DDP extends EventEmitter {
           }),
         },
       };
+      this.emit('dataUpdated', this.collections);
     }
     this.emit('added', { collection, id, fields });
   }
 
-  changed({ collection, id, fields }) {
+  changed({ collection, id, fields, cleared }) {
     const Model = this.models[collection];
     if (Model) {
       this.collections = {
         ...this.collections,
         [collection]: {
           ...this.collections[collection],
-          [id]: new Model({
+          [id]: new Model(omit({
             ...this.collections[collection][id],
             ...fields,
-          }),
+          }, cleared)),
         },
       };
+      this.emit('dataUpdated', this.collections);
     }
     this.emit('changed', { collection, id, fields });
   }
@@ -212,6 +215,7 @@ class DDP extends EventEmitter {
             .map(key => ({ [key]: this.collections[collection] })),
         ),
       };
+      this.emit('dataUpdated', this.collections);
     }
     this.emit('removed', { collection, id });
   }

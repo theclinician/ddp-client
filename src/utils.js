@@ -17,3 +17,14 @@ export const once = (func) => {
     }
   };
 };
+
+export const omit = (object, keys) => {
+  if (!keys || keys.length === 0) {
+    return object;
+  }
+  const copy = { ...object };
+  for (const key of keys) {
+    delete copy[key];
+  }
+  return copy;
+};
