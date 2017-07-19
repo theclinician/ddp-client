@@ -2,6 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import ddp from '../common/utils/ddp';
 import {
+  values,
+} from 'lodash';
+import {
   compose,
   mapProps,
   withState,
@@ -34,7 +37,7 @@ const Lists = compose(
     ...rest
   }) => ({
     ...rest,
-    lists: Object.keys(collections[TodoList.collection]).map(id => collections[TodoList.collection][id]),
+    lists: values(collections[TodoList.collection]),
   })),
   withHandlers({
     onChangeTitle: ({

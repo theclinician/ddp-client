@@ -1,26 +1,42 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import DDPClient from 'ddp-client';
-import { isEqual } from 'lodash';
+import {
+  isEqual,
+  compact,
+} from 'lodash';
 import {
   debounce,
 } from '@theclinician/toolbelt';
 
+const increase = (key, value) => (prevState) => ({
+  ...prevState,
+  [key]: (prevState[key] || 0) + value,
+});
+
 const setupListeners = (ddpClient, cb) => {
   let listeners = [];
+  let updatePending = false;
+  let afterFlushListeners = [];
 
-  const update = debounce(() => {
-    if (listeners) {
-      cb(ddpClient.collections);
+  const scheduleFlush = debounce(() => {
+    if (!listeners) {
+      return;
     }
+    cb(ddpClient.collections);
+    for (const action of afterFlushListeners) {
+      action();
+    }
+    afterFlushListeners = [];
+    updatePending = false;
   }, {
     ms: 100,
   });
 
-  listeners.push(ddpClient.on('added',   update));
-  listeners.push(ddpClient.on('changed', update));
-  listeners.push(ddpClient.on('removed', update));
-
+  listeners.push(ddpClient.on('dataUpdated', () => {
+    updatePending = true;
+    scheduleFlush();
+  }));
   cb(ddpClient.collections);
 
   return {
@@ -29,7 +45,14 @@ const setupListeners = (ddpClient, cb) => {
         listeners.forEach(stop => stop());
       }
       listeners = null;
-    }
+    },
+    afterFlush(action) {
+      if (updatePending) {
+        afterFlushListeners.push(action);
+      } else {
+        action();
+      }
+    },
   }
 };
 
@@ -60,7 +83,7 @@ const ddp = ({
       this.state = {
         collections: {},
         numberOfPendingMutations: 0,
-        numberOfPendingSubscriptions: 0,
+        numberOfPendingSubscriptions: compact(subscriptions(props)).length,
       };
       const mutate = (request) => {
         if (request) {
@@ -124,6 +147,11 @@ const ddp = ({
     updateSubscriptions(newProps = this.props) {
       const keep = new Map();
       const newSubs = [];
+      if (!this.wasUpdated) {
+        this.setState({
+          numberOfPendingSubscriptions: 0,
+        });
+      }
       subscriptions(newProps).forEach((options) => {
         const sub = this.currentSubs.find(s => isEqual(s.options, options));
         if (sub) {
@@ -133,7 +161,7 @@ const ddp = ({
           newSubs.push({
             options,
             handle: this.ddpClient.subscribe(options.name, options.params, {
-              onReady: () => this.endSubscription(),
+              onReady: () => this.listeners.afterFlush(() => this.endSubscription()),
             }),
           });
         }
@@ -146,22 +174,23 @@ const ddp = ({
         }
       });
       this.currentSubs = newSubs;
+      this.wasUpdated = true;
     }
 
     beginSubscription() {
-      this.setState({ numberOfPendingSubscriptions: this.state.numberOfPendingSubscriptions + 1 });
+      this.setState(increase('numberOfPendingSubscriptions', 1));
     }
 
     endSubscription() {
-      this.setState({ numberOfPendingSubscriptions: this.state.numberOfPendingSubscriptions - 1 });
+      this.setState(increase('numberOfPendingSubscriptions', -1));
     }
 
     beginMutation() {
-      this.setState({ numberOfPendingMutations: this.state.numberOfPendingMutations + 1 });
+      this.setState(increase('numberOfPendingMutations', 1));
     }
 
     endMutation() {
-      this.setState({ numberOfPendingMutations: this.state.numberOfPendingMutations - 1 });
+      this.setState(increase('numberOfPendingMutations', -1));
     }
 
     render() {

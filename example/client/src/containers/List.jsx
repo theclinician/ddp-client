@@ -1,4 +1,7 @@
 import React from 'react';
+import {
+  values,
+} from 'lodash';
 import { Link } from 'react-router-dom';
 import {
   compose,
@@ -71,7 +74,7 @@ const Lists = compose(
   }) => ({
     ...rest,
     list: collections[TodoList.collection][listId],
-    todos: Object.keys(collections[Todo.collection]).map(id => collections[Todo.collection][id]).filter(todo => todo.getListId() === listId),
+    todos: values(collections[Todo.collection]).filter(todo => todo.getListId() === listId),
   })),
   withHandlers({
     onChangeName: ({
