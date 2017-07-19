@@ -34,13 +34,22 @@ class DDP extends EventEmitter {
   models: { [string]: Function };
   storage: AsyncStorage;
 
+  static registerModel(Model, collection) {
+    if (!collection) {
+      throw Error('Method registerModel() requires collection name as the second argument');
+    }
+    if (this.models[collection]) {
+      console.error(`Overwriting model ${this.models[collection].name} bound to collection ${collection}; new model is ${Model.name}`);
+    }
+    this.models[Model.collection] = Model;
+  }
+
   constructor(options: {
     debug?: boolean,
     endpoint: string,
     autoConnect?: boolean,
     autoReconnect?: boolean,
     reconnectInterval?: number,
-    models?: { [string]: Function },
     storage?: AsyncStorage,
   }) {
     super();
@@ -60,12 +69,7 @@ class DDP extends EventEmitter {
     this.autoReconnect = (options.autoReconnect !== false);
     this.reconnectInterval = options.reconnectInterval || DEFAULT_RECONNECT_INTERVAL;
     this.collections = {};
-    this.models = options.models || {};
     this.storage = options.storage || multiStorage;
-
-    Object.keys(this.models).forEach((name) => {
-      this.collections[name] = {};
-    });
 
     // Methods/ subscriptions handlers
     this.subscriptions = {};
@@ -169,7 +173,7 @@ class DDP extends EventEmitter {
   }
 
   added({ collection, id, fields }) {
-    const Model = this.models[collection];
+    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
     if (Model) {
       this.collections = {
         ...this.collections,
@@ -187,7 +191,7 @@ class DDP extends EventEmitter {
   }
 
   changed({ collection, id, fields, cleared }) {
-    const Model = this.models[collection];
+    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
     if (Model) {
       this.collections = {
         ...this.collections,
@@ -205,7 +209,7 @@ class DDP extends EventEmitter {
   }
 
   removed({ collection, id }) {
-    const Model = this.models[collection];
+    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
     if (Model) {
       this.collections = {
         ...this.collections,
@@ -414,5 +418,12 @@ class DDP extends EventEmitter {
           );
   }
 }
+
+DDP.models = {};
+DDP.UnknownModel = class UnknownModel {
+  constructor(doc) {
+    Object.assign(this, doc);
+  }
+};
 
 export default DDP;

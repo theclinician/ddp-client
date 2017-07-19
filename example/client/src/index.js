@@ -9,11 +9,13 @@ import './index.css';
 const ddpClient = new DDPClient({
   endpoint: 'ws://localhost:4000/websocket',
   SocketConstructor: WebSocket,
-  models: Object.assign({}, ...[
-    Todo,
-    TodoList,
-  ].map(M => ({ [M.collection]: M }))),
+  debug: true,
 });
+
+[
+  Todo,
+  TodoList,
+].forEach(M => DDPClient.registerModel(M, M.collection));
 
 ReactDOM.render(
   <App ddpClient={ddpClient}/>,
