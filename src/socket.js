@@ -60,7 +60,7 @@ export default class Socket extends EventEmitter {
       // Hence, to avoid the `close` event to be emitted twice, before
       // manually closing the socket we de-register the `onclose`
       // callback.
-      delete this.rawSocket.onclose;
+      this.rawSocket.onclose = null;
       // Safe to perform even if the socket is already closed
       this.rawSocket.close();
       this.rawSocket = null;
