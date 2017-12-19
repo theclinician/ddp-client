@@ -407,9 +407,15 @@ class DDP extends EventEmitter {
   }
 
   executeLoginRoutine(name, params, { skipQueue = false } = {}) {
+    let getLoginPromise;
+    if (typeof name === 'function') {
+      getLoginPromise = name;
+    } else {
+      getLoginPromise = () => this.apply(name, params, { skipQueue, wait: true });
+    }
     return Promise.resolve()
           .then(this.emit.bind(this, 'loggingIn'))
-          .then(this.apply.bind(this, name, params, { skipQueue, wait: true }))
+          .then(() => getLoginPromise())
           .then(this.handleLogin.bind(this))
           .catch(err =>
             Promise.resolve()
