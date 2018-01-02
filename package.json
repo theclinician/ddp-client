@@ -1,6 +1,6 @@
 {
   "name": "@theclinician/ddp-client",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "An alternative DDP client implementation",
   "main": "./lib/index.js",
   "scripts": {
@@ -8,7 +8,6 @@
     "build-webpack": "webpack --progress",
     "clean": "rimraf lib coverage",
     "coverage": "babel-node $(npm bin)/isparta cover _mocha -- 'src/**/*.test.js'",
-    "coverage-report": "http-server ./coverage/lcov-report",
     "lint": "eslint src",
     "prepare": "npm run clean && npm run build",
     "test": "mocha --compilers js:babel-core/register 'src/**/*.test.js'",
@@ -42,7 +41,6 @@
     "eslint": "^3.12.2",
     "eslint-config-airbnb-base": "^11.0.1",
     "eslint-plugin-import": "^2.2.0",
-    "http-server": "^0.9.0",
     "isparta": "^4.0.0",
     "mocha": "^3.2.0",
     "rimraf": "^2.6.1",
