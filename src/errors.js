@@ -1,16 +1,8 @@
+import DDPError from './DDPError';
 
-class DDPError extends Error {
-  constructor(error, reason, details) {
-    super(reason);
-    this.error = error;
-    this.reason = reason;
-    this.details = details;
-  }
-}
-
-class DDPCancel extends Error {
+class DDPCancel extends DDPError {
   constructor() {
-    super('DDP canceled');
+    super('cancel', 'Action was canceled');
     this.isCancel = true;
   }
 }
