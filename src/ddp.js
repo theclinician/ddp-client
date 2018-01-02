@@ -353,8 +353,10 @@ class DDP extends EventEmitter {
 
   handleLogin({ id, token }) {
     this.userId = id;
-    return this.storage
-          .set(`${this.endpoint}__login_token__`, token)
+    return (token
+            ? this.storage.set(`${this.endpoint}__login_token__`, token)
+            : Promise.resolve()
+          )
           .then(this.emit.bind(this, 'loggedIn', id))
           .then(() => id);
   }
@@ -420,6 +422,7 @@ class DDP extends EventEmitter {
           .catch(err =>
             Promise.resolve()
               .then(this.emit.bind(this, 'loginError', err))
+              .then(this.handleLogout.bind(this))
               .then(() => Promise.reject(err)),
           );
   }

@@ -1,6 +1,6 @@
 {
   "name": "@theclinician/ddp-client",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "An alternative DDP client implementation",
   "main": "./lib/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "coverage": "babel-node $(npm bin)/isparta cover _mocha -- 'src/**/*.test.js'",
     "coverage-report": "http-server ./coverage/lcov-report",
     "lint": "eslint src",
-    "prepublish": "npm run clean && npm run build",
+    "prepare": "npm run clean && npm run build",
     "test": "mocha --compilers js:babel-core/register 'src/**/*.test.js'",
     "test-watch": "mocha --watch --compilers js:babel-core/register 'src/**/*.test.js'"
   },
