@@ -325,6 +325,9 @@ class DDP extends EventEmitter {
     if (numberOfPending > 0 && this.status === 'connected') {
       this.emit('restoring');
 
+      this.collections = {};
+      this.emit('dataUpdated', this.collections);
+
       Object.keys(this.subscriptions).forEach((id) => {
         this.subscriptions[id].setCallback(cb);
         this.socket.send(this.subscriptions[id].toDDPMessage(id));
