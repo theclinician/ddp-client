@@ -196,7 +196,12 @@ class DDP extends EventEmitter {
         [collection]: {
           ...this.collections[collection],
           [id]: new Model(omit({
-            ...this.collections[collection][id],
+            // NOTE: Theoretically this should not happen, i.e. there
+            //       should always be "added" prior to "changed", but
+            //       sometimes it does not seem to be the case, so better
+            //       fallback by interpreting the first "changed" as "added"
+            ...this.collections[collection] &&
+               this.collections[collection][id],
             ...fields,
           }, cleared)),
         },
