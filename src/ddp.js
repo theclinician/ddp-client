@@ -1,6 +1,5 @@
 import {
   EventEmitter,
-  Queue,
 } from '@theclinician/toolbelt';
 import Socket from './socket';
 import Method from './Method.js';
@@ -29,7 +28,6 @@ class DDP extends EventEmitter {
   subscriptions: { [string]: Subscription };
   methods: { [string]: Method };
   socket: Socket;
-  methodsQueue: Queue;
   collections: { [string]: { [string]: mixed } };
   models: { [string]: Function };
   storage: AsyncStorage;
@@ -75,10 +73,9 @@ class DDP extends EventEmitter {
     this.subscriptions = {};
     this.methods = {};
 
-    this.methodsQueue = new Queue({
-      onError: () => false, // make sure the queue is not terminated even if one error occurs
-    });
-    this.methodsQueue.pause();
+    this.methodsInQueue = [];
+    this.methodsPending = {};
+    this.currentMethodId = null;
 
     // Socket
     this.socket = new Socket(options.SocketConstructor, options.endpoint);
@@ -101,10 +98,6 @@ class DDP extends EventEmitter {
     this.socket.on('close', () => {
       this.status = 'disconnected';
 
-      this.methodsQueue.pause();
-      this.methodsQueue.clear();
-      this.cancelPendingMethods(new Error('Connection was lost'));
-
       this.emit('disconnected');
       if (this.autoReconnect) {
         // Schedule a connection
@@ -119,8 +112,13 @@ class DDP extends EventEmitter {
       switch (message.msg) {
         case 'connected':
           this.status = 'connected';
+          // It's important to call it before resumeLogin because
+          // when login returns it calls "emptyQueue" immediately.
+          this.discardCancalableMethods();
+
           this.resumeLogin().then(() => {
-            this.methodsQueue.resume();
+            this.restorePendingMethods();
+            this.emptyQueue();
             this.restoreSubscriptions();
             this.emit('connected');
           });
@@ -232,9 +230,80 @@ class DDP extends EventEmitter {
     this.socket.close();
   }
 
-  cancelPendingMethods(err) {
-    Object.keys(this.methods).forEach((id) => {
-      this.methods[id].cancel(err);
+  discardCancalableMethods() {
+    Object.keys(this.methodsPending).forEach((id) => {
+      const method = this.methods[id];
+      if (method &&
+          method.noRetry) {
+        method.cancel();
+      }
+    });
+
+    const methodsInQueue = [];
+    this.methodsInQueue.forEach((queued) => {
+      if (queued.cancelOnReconnect) {
+        const method = this.methods[queued.id];
+        if (method) {
+          method.cancel();
+          delete this.methods[queued.id];
+        }
+      } else {
+        methodsInQueue.push(queued);
+      }
+    });
+    this.methodsInQueue = methodsInQueue;
+  }
+
+  emptyQueue() {
+    if (this.currentMethodId || this.status !== 'connected') {
+      return;
+    }
+    while (this.methodsInQueue.length > 0) {
+      const { id, wait } = this.methodsInQueue.shift();
+      const method = this.methods[id];
+      if (method) {
+        if (method.wasCanceled) {
+          delete this.methods[id];
+        } else {
+          this.socket.send(method.toDDPMessage(id));
+          this.methodsPending[id] = method;
+          method.setCallback(() => {
+            delete this.methods[id];
+            delete this.methodsPending[id];
+            if (wait) {
+              this.currentMethodId = null;
+              this.emptyQueue();
+            }
+          });
+          if (wait) {
+            this.currentMethodId = id;
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  restorePendingMethods() {
+    const allMethodsIds = Object.keys(this.methodsPending);
+    allMethodsIds.forEach((id) => {
+      const method = this.methods[id];
+      if (method &&
+          !method.wasCanceled &&
+          !method.methodResult) {
+        this.socket.send(method.toDDPMessage(id));
+      }
+    });
+    this.once('restored', () => {
+      allMethodsIds.forEach((id) => {
+        const method = this.methods[id];
+        if (method &&
+            method.methodResult &&
+            !method.wasCanceled &&
+            !method.dataVisible) {
+          method.updated();
+        }
+      });
     });
   }
 
@@ -287,6 +356,7 @@ class DDP extends EventEmitter {
 
   apply(name, params, {
     wait,
+    cancelOnReconnect,
     noRetry,
     skipQueue,
     onResultReceived,
@@ -296,6 +366,7 @@ class DDP extends EventEmitter {
       return new Promise((resolve, reject) => {
         this.apply(name, params, {
           wait,
+          cancelOnReconnect,
           noRetry,
           skipQueue,
           onResultReceived,
@@ -305,7 +376,6 @@ class DDP extends EventEmitter {
     }
 
     const id = uniqueId();
-
     this.methods[id] = new Method({
       name,
       params,
@@ -314,39 +384,17 @@ class DDP extends EventEmitter {
       asyncCallback,
     });
 
-    const action = (cb) => {
-      const method = this.methods[id];
-      if (method) {
-        this.methods[id].setCallback((error, result) => {
-          if (cb) {
-            cb(error, result);
-          }
-          delete this.methods[id];
-        });
-        if (this.status === 'connected') {
-          this.socket.send(method.toDDPMessage(id));
-        } else {
-          // NOTE: Theoretically this should not happen since we are pausing
-          //       queue when status in disconnected. Better safe than sorry.
-          this.methods[id].cancel();
-        }
-      }
+    const queued = {
+      id,
+      wait,
+      cancelOnReconnect,
     };
-
     if (skipQueue) {
-      action(null);
+      this.methodsInQueue.unshift(queued);
     } else {
-      this.methodsQueue.push({
-        noWait: !wait,
-        onStop: (err) => {
-          // This can be called when queue is clear, e.g. when connection is lost.
-          if (this.methods[id]) {
-            this.methods[id].cancel(err);
-          }
-        },
-        action,
-      });
+      this.methodsInQueue.push(queued);
     }
+    this.emptyQueue();
 
     return undefined;
   }
