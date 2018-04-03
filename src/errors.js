@@ -1,8 +1,8 @@
 import DDPError from './DDPError';
 
 class DDPCancel extends DDPError {
-  constructor() {
-    super('cancel', 'Action was canceled');
+  constructor(message = 'Action was canceled') {
+    super('cancel', message);
     this.isCancel = true;
   }
 }

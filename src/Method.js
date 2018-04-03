@@ -63,7 +63,7 @@ class Method {
 
   cancel(err) {
     this.wasCanceled = true;
-    this.cb(err || new DDPCancel());
+    this.cb(err || new DDPCancel(`Method ${this.name} was canceled`));
   }
 
   setCallback(cb) {
