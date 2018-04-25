@@ -129,6 +129,7 @@ class DDP extends EventEmitter {
           this.socket.send({ msg: 'pong', id: message.id });
           break;
         case 'ready':
+          this.emit('ready', { subs: message.subs });
           message.subs.forEach(id => this.subscriptions[id] && this.subscriptions[id].ready());
           break;
         case 'nosub':
@@ -146,6 +147,7 @@ class DDP extends EventEmitter {
           }
           break;
         case 'updated':
+          this.emit('updated', { methods: message.methods });
           message.methods.forEach(id => this.methods[id] && this.methods[id].updated());
           break;
         case 'error':
