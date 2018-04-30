@@ -201,7 +201,8 @@ class DDP extends EventEmitter {
             // NOTE: Theoretically this should not happen, i.e. there
             //       should always be "added" prior to "changed", but
             //       sometimes it does not seem to be the case, so better
-            //       fallback by interpreting the first "changed" as "added"
+            //       fallback by interpreting the first "changed" as "added".
+            _id: id,
             ...this.collections[collection] &&
                this.collections[collection][id],
             ...fields,
