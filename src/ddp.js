@@ -173,13 +173,13 @@ class DDP extends EventEmitter {
   }
 
   added({ collection, id, fields }) {
-    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
-    if (Model) {
+    const transform = this.constructor.defaultGetTransform(collection);
+    if (transform) {
       this.collections = {
         ...this.collections,
         [collection]: {
           ...this.collections[collection],
-          [id]: new Model({
+          [id]: transform({
             _id: id,
             ...fields,
           }),
@@ -191,13 +191,13 @@ class DDP extends EventEmitter {
   }
 
   changed({ collection, id, fields, cleared }) {
-    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
-    if (Model) {
+    const transform = this.constructor.defaultGetTransform(collection);
+    if (transform) {
       this.collections = {
         ...this.collections,
         [collection]: {
           ...this.collections[collection],
-          [id]: new Model(omit({
+          [id]: transform(omit({
             // NOTE: Theoretically this should not happen, i.e. there
             //       should always be "added" prior to "changed", but
             //       sometimes it does not seem to be the case, so better
@@ -215,8 +215,8 @@ class DDP extends EventEmitter {
   }
 
   removed({ collection, id }) {
-    const Model = this.constructor.models[collection] || this.constructor.UnknownModel;
-    if (Model) {
+    const transform = this.constructor.defaultGetTransform(collection);
+    if (transform) {
       this.collections = {
         ...this.collections,
         [collection]: this.collections[collection]
@@ -487,11 +487,15 @@ class DDP extends EventEmitter {
   }
 }
 
+const identity = x => x;
+
 DDP.models = {};
-DDP.UnknownModel = class UnknownModel {
-  constructor(doc) {
-    Object.assign(this, doc);
+DDP.defaultGetTransform = (collection) => {
+  const Model = DDP.models[collection];
+  if (Model) {
+    return doc => new Model(doc);
   }
+  return identity;
 };
 
 export default DDP;
