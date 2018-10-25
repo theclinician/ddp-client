@@ -116,7 +116,19 @@ class DDP extends EventEmitter {
           // when login returns it calls "emptyQueue" immediately.
           this.discardCancalableMethods();
 
+          // NOTE: Restore subscriptions ensures that all subscriptiosn
+          //       that were active before we lost the connection are now
+          //       re-created. However, there might be elements that are outomatically published
+          //       by meteor with Meteor.publish(null), e.g. current user details.
+          //       To ensure they're not lost, instead of clearing cache inside restoreSubscriptions()
+          //       we do it right here, immediatelly after receiving "connected" message.
+          this.collections = {};
+
           this.resumeLogin().then(() => {
+            // NOTE: Here we call again methods that were
+            //       already called before. Theoretically it might be better
+            //       to re-queue them instead of calling immediately, but it's
+            //       not obvious what the logic should exactly be.
             this.restorePendingMethods();
             this.emptyQueue();
             this.restoreSubscriptions();
@@ -327,10 +339,6 @@ class DDP extends EventEmitter {
 
     if (numberOfPending > 0 && this.status === 'connected') {
       this.emit('restoring');
-
-      this.collections = {};
-      this.emit('dataUpdated', this.collections);
-
       Object.keys(this.subscriptions).forEach((id) => {
         this.subscriptions[id].setCallback(cb);
         this.socket.send(this.subscriptions[id].toDDPMessage(id));
