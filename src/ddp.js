@@ -72,6 +72,7 @@ class DDP extends EventEmitter {
     // Methods/ subscriptions handlers
     this.subscriptions = {};
     this.methods = {};
+    this.handleLogoutFailure = options.handleLogoutFailure || this.constructor.defaultHandleLogoutFailure;
 
     this.methodsInQueue = [];
     this.methodsPending = {};
@@ -469,7 +470,7 @@ class DDP extends EventEmitter {
           .then(this.handleLogout.bind(this))
           .catch(err =>
             Promise.resolve()
-              .then(this.handleLogout.bind(this))
+              .then(this.handleLogoutFailure.bind(this, err))
               .then(this.emit.bind(this, 'logoutError', err))
               .then(() => Promise.reject(err)),
           );
@@ -504,6 +505,10 @@ DDP.defaultGetTransform = (collection) => {
     return doc => new Model(doc);
   }
   return identity;
+};
+
+DDP.defaultHandleLogoutFailure = function () {
+  this.handleLogout();
 };
 
 export default DDP;
