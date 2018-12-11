@@ -72,6 +72,7 @@ class DDP extends EventEmitter {
     // Methods/ subscriptions handlers
     this.subscriptions = {};
     this.methods = {};
+    this.handleLoginResume = options.handleLoginResume || this.constructor.defaultHandleLoginResume;
     this.handleLogoutFailure = options.handleLogoutFailure || this.constructor.defaultHandleLogoutFailure;
 
     this.methodsInQueue = [];
@@ -441,17 +442,7 @@ class DDP extends EventEmitter {
     // NOTE: This promise never rejects
     return Promise.resolve()
           .then(this.emit.bind(this, 'loggingIn'))
-          .then(() => this.storage.get(`${this.endpoint}__login_token__`))
-          .then((resume) => {
-            if (!resume) {
-              // NOTE: It's important to emit loginError here, because we've already
-              //       triggered loggingIn. So by triggering error as well we are
-              //       indicating that the login procedure was actually terminated.
-              this.emit('loginError', new Error('No login token'));
-              return undefined;
-            }
-            return this.login({ resume }, { skipQueue: true });
-          })
+          .then(this.handleLoginResume.bind(this))
           .catch(err =>
             Promise.resolve()
               .then(this.handleLogout.bind(this))
@@ -508,7 +499,21 @@ DDP.defaultGetTransform = (collection) => {
 };
 
 DDP.defaultHandleLogoutFailure = function () {
-  this.handleLogout();
+  return this.handleLogout();
+};
+
+DDP.defaultHandleLoginResume = function () {
+  return this.storage.get(`${this.endpoint}__login_token__`)
+    .then((resume) => {
+      if (!resume) {
+        // NOTE: It's important to emit loginError here, because we've already
+        //       triggered loggingIn. So by triggering error as well we are
+        //       indicating that the login procedure was actually terminated.
+        this.emit('loginError', new Error('No login token'));
+        return undefined;
+      }
+      return this.login({ resume }, { skipQueue: true });
+    });
 };
 
 export default DDP;
