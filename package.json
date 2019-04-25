@@ -1,17 +1,21 @@
 {
   "name": "@theclinician/ddp-client",
-  "version": "0.5.3-rc0",
+  "version": "0.5.3",
   "description": "An alternative DDP client implementation",
   "main": "./lib/index.js",
   "scripts": {
     "build": "babel src --out-dir lib --ignore '*.test.js'",
-    "build-webpack": "webpack --progress",
     "clean": "rimraf lib coverage",
-    "coverage": "babel-node $(npm bin)/isparta cover _mocha -- 'src/**/*.test.js'",
+    "coverage": "jest --coverage src",    
     "lint": "eslint src",
     "prepare": "npm run clean && npm run build",
-    "test": "mocha --compilers js:babel-core/register 'src/**/*.test.js'",
-    "test-watch": "mocha --watch --compilers js:babel-core/register 'src/**/*.test.js'"
+    "test": "jest",
+    "test-watch": "jest --watch"
+  },
+  "jest": {
+    "roots": [
+      "./src"
+    ]
   },
   "repository": {
     "type": "git",
@@ -25,28 +29,17 @@
   },
   "homepage": "https://github.com/theclinician/ddp-client",
   "devDependencies": {
-    "babel-cli": "^6.23.0",
-    "babel-core": "^6.26.3",
-    "babel-eslint": "^7.2.2",
-    "babel-loader": "^6.2.10",
-    "babel-plugin-syntax-trailing-function-commas": "^6.22.0",
-    "babel-plugin-transform-runtime": "^6.15.0",
-    "babel-polyfill": "^6.20.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-flow": "^6.23.0",
-    "babel-preset-stage-3": "^6.22.0",
-    "babel-root-import": "^4.1.5",
-    "chai": "^3.5.0",
-    "clean-webpack-plugin": "^0.1.15",
-    "eslint": "^3.12.2",
-    "eslint-config-airbnb-base": "^11.0.1",
-    "eslint-plugin-import": "^2.2.0",
-    "isparta": "^4.0.0",
-    "mocha": "^5.2.0",
-    "rimraf": "^2.6.1",
-    "sinon": "^1.17.7",
-    "sinon-chai": "^2.8.0",
-    "webpack": "^2.2.1"
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "@babel/plugin-proposal-object-rest-spread": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "babel-eslint": "^10.0.1",
+    "babel-jest": "^24.7.1",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.17.2",
+    "jest": "^24.7.1",
+    "rimraf": "^2.6.1"
   },
   "dependencies": {
     "@theclinician/toolbelt": "0.0.2",
