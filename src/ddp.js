@@ -17,21 +17,7 @@ import * as multiStorage from './multiStorage.js';
 const DDP_VERSION = '1';
 const DEFAULT_RECONNECT_INTERVAL = 10000;
 
-interface AsyncStorage {
-  get(string): Promise;
-  set(string, mixed): Promise;
-  del(string): Promise;
-}
-
 class DDP extends EventEmitter {
-  status: string;
-  subscriptions: { [string]: Subscription };
-  methods: { [string]: Method };
-  socket: Socket;
-  collections: { [string]: { [string]: mixed } };
-  models: { [string]: Function };
-  storage: AsyncStorage;
-
   static registerModel(Model, collection) {
     if (!collection) {
       throw Error('Method registerModel() requires collection name as the second argument');
@@ -42,14 +28,7 @@ class DDP extends EventEmitter {
     this.models[Model.collection] = Model;
   }
 
-  constructor(options: {
-    debug?: boolean,
-    endpoint: string,
-    autoConnect?: boolean,
-    autoReconnect?: boolean,
-    reconnectInterval?: number,
-    storage?: AsyncStorage,
-  }) {
+  constructor(options) {
     super();
 
     this.captureUnhandledErrors([
