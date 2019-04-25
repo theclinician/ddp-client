@@ -68,6 +68,7 @@ class DDP extends EventEmitter {
     this.reconnectInterval = options.reconnectInterval || DEFAULT_RECONNECT_INTERVAL;
     this.collections = {};
     this.storage = options.storage || multiStorage;
+    this.getTransform = options.getTransform || this.constructor.defaultGetTransform;
 
     // Methods/ subscriptions handlers
     this.subscriptions = {};
@@ -187,7 +188,7 @@ class DDP extends EventEmitter {
   }
 
   added({ collection, id, fields }) {
-    const transform = this.constructor.defaultGetTransform(collection);
+    const transform = this.getTransform(collection);
     if (transform) {
       this.collections = {
         ...this.collections,
@@ -205,7 +206,7 @@ class DDP extends EventEmitter {
   }
 
   changed({ collection, id, fields, cleared }) {
-    const transform = this.constructor.defaultGetTransform(collection);
+    const transform = this.getTransform(collection);
     if (transform) {
       this.collections = {
         ...this.collections,
@@ -229,7 +230,7 @@ class DDP extends EventEmitter {
   }
 
   removed({ collection, id }) {
-    const transform = this.constructor.defaultGetTransform(collection);
+    const transform = this.getTransform(collection);
     if (transform) {
       this.collections = {
         ...this.collections,
