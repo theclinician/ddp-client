@@ -1,6 +1,6 @@
 {
   "name": "@theclinician/ddp-client",
-  "version": "0.5.3",
+  "version": "0.6.0",
   "description": "An alternative DDP client implementation",
   "main": "./lib/index.js",
   "scripts": {
