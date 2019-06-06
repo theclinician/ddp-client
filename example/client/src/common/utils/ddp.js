@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import DDPClient from 'ddp-client';
+import DDPClient from '@theclinician/ddp-client';
 import {
   isEqual,
   compact,

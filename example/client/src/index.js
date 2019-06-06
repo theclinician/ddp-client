@@ -1,4 +1,4 @@
-import DDPClient from 'ddp-client';
+import DDPClient from '@theclinician/ddp-client';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './containers/App';
