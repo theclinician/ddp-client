@@ -184,7 +184,12 @@ class DDP extends EventEmitter {
     this.emit('added', { collection, id, fields });
   }
 
-  changed({ collection, id, fields, cleared }) {
+  changed({
+    collection,
+    id,
+    fields,
+    cleared,
+  }) {
     const transform = this.getTransform(collection);
     if (transform) {
       this.collections = {
@@ -403,31 +408,31 @@ class DDP extends EventEmitter {
   handleLogin({ id, token }) {
     this.userId = id;
     return (token
-            ? this.storage.set(`${this.endpoint}__login_token__`, token)
-            : Promise.resolve()
-          )
-          .then(this.emit.bind(this, 'loggedIn', id))
-          .then(() => id);
+      ? this.storage.set(`${this.endpoint}__login_token__`, token)
+      : Promise.resolve()
+    )
+      .then(this.emit.bind(this, 'loggedIn', id))
+      .then(() => id);
   }
 
   handleLogout() {
     this.userId = null;
     return this.storage
-          .del(`${this.endpoint}__login_token__`)
-          .then(this.emit.bind(this, 'loggedOut'))
-          .then(() => null);
+      .del(`${this.endpoint}__login_token__`)
+      .then(this.emit.bind(this, 'loggedOut'))
+      .then(() => null);
   }
 
   resumeLogin() {
     // NOTE: This promise never rejects
     return Promise.resolve()
-          .then(this.emit.bind(this, 'loggingIn'))
-          .then(this.handleLoginResume.bind(this))
-          .catch(err =>
-            Promise.resolve()
-              .then(this.handleLogout.bind(this))
-              .then(this.emit.bind(this, 'resumeLoginError', err)),
-          );
+      .then(this.emit.bind(this, 'loggingIn'))
+      .then(this.handleLoginResume.bind(this))
+      .catch(err => (
+        Promise.resolve()
+          .then(this.handleLogout.bind(this))
+          .then(this.emit.bind(this, 'resumeLoginError', err))
+      ));
   }
 
   login(options, { skipQueue } = {}) {
@@ -436,15 +441,15 @@ class DDP extends EventEmitter {
 
   logout() {
     return Promise.resolve()
-          .then(this.emit.bind(this, 'loggingIn'))
-          .then(this.apply.bind(this, 'logout', []))
-          .then(this.handleLogout.bind(this))
-          .catch(err =>
-            Promise.resolve()
-              .then(this.handleLogoutFailure.bind(this, err))
-              .then(this.emit.bind(this, 'logoutError', err))
-              .then(() => Promise.reject(err)),
-          );
+      .then(this.emit.bind(this, 'loggingIn'))
+      .then(this.apply.bind(this, 'logout', []))
+      .then(this.handleLogout.bind(this))
+      .catch(err => (
+        Promise.resolve()
+          .then(this.handleLogoutFailure.bind(this, err))
+          .then(this.emit.bind(this, 'logoutError', err))
+          .then(() => Promise.reject(err))
+      ));
   }
 
   executeLoginRoutine(name, params, { skipQueue = false } = {}) {
@@ -455,15 +460,15 @@ class DDP extends EventEmitter {
       getLoginPromise = () => this.apply(name, params, { skipQueue, wait: true });
     }
     return Promise.resolve()
-          .then(this.emit.bind(this, 'loggingIn'))
-          .then(() => getLoginPromise())
-          .then(this.handleLogin.bind(this))
-          .catch(err =>
-            Promise.resolve()
-              .then(this.emit.bind(this, 'loginError', err))
-              .then(this.handleLogout.bind(this))
-              .then(() => Promise.reject(err)),
-          );
+      .then(this.emit.bind(this, 'loggingIn'))
+      .then(() => getLoginPromise())
+      .then(this.handleLogin.bind(this))
+      .catch(err => (
+        Promise.resolve()
+          .then(this.emit.bind(this, 'loginError', err))
+          .then(this.handleLogout.bind(this))
+          .then(() => Promise.reject(err))
+      ));
   }
 }
 

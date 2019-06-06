@@ -8,7 +8,6 @@ import EJSON from 'ejson';
 import { EventEmitter } from '@theclinician/toolbelt';
 
 export default class Socket extends EventEmitter {
-
   constructor(SocketConstructor, endpoint) {
     super();
     this.SocketConstructor = SocketConstructor;
@@ -94,5 +93,4 @@ export default class Socket extends EventEmitter {
       this.rawSocket.close();
     }
   }
-
 }
