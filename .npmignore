@@ -1,3 +1,4 @@
 /src
 /example
-/package-lock.json
+.babelrc
+.eslintrc.json

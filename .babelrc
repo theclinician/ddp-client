@@ -1,5 +1,14 @@
 {
-  "presets": ["@babel/preset-env"],
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "browsers": "> 0.25%, not dead, not ie <= 11"
+        }
+      }
+    ]
+  ],
   "plugins": [
     "@babel/plugin-proposal-object-rest-spread"
   ]

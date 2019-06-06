@@ -6,7 +6,7 @@
   "scripts": {
     "build": "babel src --out-dir lib --ignore '*.test.js'",
     "clean": "rimraf lib coverage",
-    "coverage": "jest --coverage src",    
+    "coverage": "jest --coverage src",
     "lint": "eslint src",
     "prepare": "npm run clean && npm run build",
     "test": "jest",
@@ -42,7 +42,7 @@
     "rimraf": "^2.6.1"
   },
   "dependencies": {
-    "@theclinician/toolbelt": "0.0.2",
+    "@theclinician/toolbelt": "^0.1.0",
     "ejson": "^2.1.2"
   }
 }
