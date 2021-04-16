@@ -1,6 +1,4 @@
-import {
-  EventEmitter,
-} from '@theclinician/toolbelt';
+import EventEmitter from 'eventemitter3';
 import Socket from './socket';
 import Method from './Method.js';
 import Subscription from './Subscription.js';
@@ -96,14 +94,14 @@ class DDP extends EventEmitter {
           this.status = 'connected';
           // It's important to call it before resumeLogin because
           // when login returns it calls "emptyQueue" immediately.
-          this.discardCancalableMethods();
+          this.discardCancelableMethods();
 
-          // NOTE: Restore subscriptions ensures that all subscriptiosn
+          // NOTE: Restore subscriptions ensures that all subscriptions
           //       that were active before we lost the connection are now
-          //       re-created. However, there might be elements that are outomatically published
+          //       re-created. However, there might be elements that are automatically published
           //       by meteor with Meteor.publish(null), e.g. current user details.
           //       To ensure they're not lost, instead of clearing cache inside restoreSubscriptions()
-          //       we do it right here, immediatelly after receiving "connected" message.
+          //       we do it right here, immediately after receiving "connected" message.
           this.collections = {};
 
           this.resumeLogin().then(() => {
@@ -237,7 +235,7 @@ class DDP extends EventEmitter {
     this.socket.close();
   }
 
-  discardCancalableMethods() {
+  discardCancelableMethods() {
     Object.keys(this.methodsPending).forEach((id) => {
       const method = this.methods[id];
       if (method &&

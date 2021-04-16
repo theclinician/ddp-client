@@ -42,7 +42,7 @@
     "rimraf": "^2.6.1"
   },
   "dependencies": {
-    "@theclinician/toolbelt": "^0.1.1",
-    "ejson": "^2.1.2"
+    "ejson": "^2.1.2",
+    "eventemitter3": "^4.0.7"
   }
 }

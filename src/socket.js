@@ -5,7 +5,7 @@
  */
 
 import EJSON from 'ejson';
-import { EventEmitter } from '@theclinician/toolbelt';
+import EventEmitter from 'eventemitter3';
 
 export default class Socket extends EventEmitter {
   constructor(SocketConstructor, endpoint) {
