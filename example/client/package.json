@@ -6,7 +6,7 @@
     "@theclinician/ddp-client": "file:../..",
     "@theclinician/toolbelt": "^0.1.0",
     "flat": "^2.0.1",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-router": "^5.0.1",
