@@ -15,6 +15,13 @@ import * as multiStorage from './multiStorage.js';
 const DDP_VERSION = '1';
 const DEFAULT_RECONNECT_INTERVAL = 10000;
 
+const errors = [
+  'error',
+  'loginError',
+  'resumeLoginError',
+  'logoutError',
+];
+
 class DDP extends EventEmitter {
   static registerModel(Model, collection) {
     if (!collection) {
@@ -29,12 +36,13 @@ class DDP extends EventEmitter {
   constructor(options) {
     super();
 
-    this.captureUnhandledErrors([
-      'error',
-      'loginError',
-      'resumeLoginError',
-      'logoutError',
-    ]);
+    errors.forEach((name) => {
+      this.on(name, (...args) => {
+        if (this.listenerCount(name) <= 1) {
+          console.error(...args);
+        }
+      });
+    });
 
     this.status = 'disconnected';
     this.endpoint = options.endpoint;
