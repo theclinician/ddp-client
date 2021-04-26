@@ -1,4 +1,7 @@
 import EventEmitter from 'eventemitter3';
+import {
+  reconcile,
+} from '@theclinician/selectors';
 import Socket from './socket';
 import Method from './Method.js';
 import Subscription from './Subscription.js';
@@ -110,6 +113,7 @@ class DDP extends EventEmitter {
           //       by meteor with Meteor.publish(null), e.g. current user details.
           //       To ensure they're not lost, instead of clearing cache inside restoreSubscriptions()
           //       we do it right here, immediately after receiving "connected" message.
+          this.oldCollections = this.collections;
           this.collections = {};
 
           this.resumeLogin().then(() => {
@@ -172,6 +176,12 @@ class DDP extends EventEmitter {
     this.socket.open();
   }
 
+  maybeEmitDataUpdated() {
+    if (!this.oldCollections) {
+      this.emit('dataUpdated', this.collections);
+    }
+  }
+
   added({ collection, id, fields }) {
     const transform = this.getTransform(collection);
     if (transform) {
@@ -185,7 +195,7 @@ class DDP extends EventEmitter {
           }),
         },
       };
-      this.emit('dataUpdated', this.collections);
+      this.maybeEmitDataUpdated();
     }
     this.emit('added', { collection, id, fields });
   }
@@ -214,7 +224,7 @@ class DDP extends EventEmitter {
           }, cleared)),
         },
       };
-      this.emit('dataUpdated', this.collections);
+      this.maybeEmitDataUpdated();
     }
     this.emit('changed', { collection, id, fields });
   }
@@ -228,7 +238,7 @@ class DDP extends EventEmitter {
           ? omit(this.collections[collection], [id])
           : {},
       };
-      this.emit('dataUpdated', this.collections);
+      this.maybeEmitDataUpdated();
     }
     this.emit('removed', { collection, id });
   }
@@ -323,9 +333,20 @@ class DDP extends EventEmitter {
   restoreSubscriptions() {
     let numberOfPending = Object.keys(this.subscriptions).length;
 
+    const reconcileCollections = () => {
+      if (this.oldCollections) {
+        this.collections = reconcile(this.oldCollections, this.collections);
+        if (this.collections !== this.oldCollections) {
+          this.emit('dataUpdated', this.collections);
+        }
+        delete this.oldCollections;
+      }
+    };
+
     const cb = () => {
       numberOfPending -= 1;
       if (numberOfPending === 0) {
+        reconcileCollections();
         this.emit('restored');
       }
     };
@@ -336,6 +357,8 @@ class DDP extends EventEmitter {
         this.subscriptions[id].setCallback(cb);
         this.socket.send(this.subscriptions[id].toDDPMessage(id));
       });
+    } else {
+      reconcileCollections();
     }
   }
 
