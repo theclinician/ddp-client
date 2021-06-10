@@ -382,6 +382,8 @@ class DDP extends EventEmitter {
 
     if (this.status === 'connected') {
       this.socket.send(this.subscriptions[id].toDDPMessage(id));
+    } else {
+      this.subscriptionsToRestore.push(id);
     }
 
     return {
