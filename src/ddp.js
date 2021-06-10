@@ -55,6 +55,7 @@ class DDP extends EventEmitter {
     this.autoReconnect = (options.autoReconnect !== false);
     this.reconnectInterval = options.reconnectInterval || DEFAULT_RECONNECT_INTERVAL;
     this.collections = {};
+    this.subscriptionsToRestore = [];
     this.storage = options.storage || multiStorage;
     this.getTransform = options.getTransform || this.constructor.defaultGetTransform;
 
@@ -90,6 +91,7 @@ class DDP extends EventEmitter {
       this.status = 'disconnected';
 
       this.emit('disconnected');
+      this.subscriptionsToRestore = Object.keys(this.subscriptions);
       if (this.autoReconnect) {
         // Schedule a connection
         setTimeout(
@@ -331,7 +333,13 @@ class DDP extends EventEmitter {
   }
 
   restoreSubscriptions() {
-    let numberOfPending = Object.keys(this.subscriptions).length;
+    const {
+      subscriptionsToRestore,
+    } = this;
+    // NOTE: We don't want to restore the same subscriptions more than once.
+    this.subscriptionsToRestore = [];
+
+    let numberOfPending = subscriptionsToRestore.length;
 
     const reconcileCollections = () => {
       if (this.oldCollections) {
@@ -353,7 +361,7 @@ class DDP extends EventEmitter {
 
     if (numberOfPending > 0 && this.status === 'connected') {
       this.emit('restoring');
-      Object.keys(this.subscriptions).forEach((id) => {
+      subscriptionsToRestore.forEach((id) => {
         this.subscriptions[id].setCallback(cb);
         this.socket.send(this.subscriptions[id].toDDPMessage(id));
       });
