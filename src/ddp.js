@@ -362,8 +362,12 @@ class DDP extends EventEmitter {
     if (numberOfPending > 0 && this.status === 'connected') {
       this.emit('restoring');
       subscriptionsToRestore.forEach((id) => {
-        this.subscriptions[id].setCallback(cb);
-        this.socket.send(this.subscriptions[id].toDDPMessage(id));
+        // NOTE: Double check if this is still a valid subscription just in case,
+        //       e.g. it could have been manually stopped by the time we got here.
+        if (this.subscriptions[id]) {
+          this.subscriptions[id].setCallback(cb);
+          this.socket.send(this.subscriptions[id].toDDPMessage(id));
+        }
       });
     } else {
       reconcileCollections();
@@ -390,6 +394,10 @@ class DDP extends EventEmitter {
       stop: once(() => {
         if (this.status === 'connected') {
           this.socket.send({ id, msg: 'unsub' });
+        }
+        const i = this.subscriptionsToRestore.indexOf(id);
+        if (i >= 0) {
+          this.subscriptionsToRestore.splice(i, 1);
         }
         delete this.subscriptions[id];
         if (onStop) {
